@@ -29,4 +29,3 @@ def pdb_model(structure_file, water=False):
 
     return model
 
-    pass
