@@ -11,8 +11,8 @@ class Pmolecule(object):
         pass
 
     def network(self, cutoff=5, weight=True):
-        path = self.path_to_file
+        model = self.model
 
-        return bgraph.network(path, cutoff=cutoff, weight=weight)
+        return bgraph.network(model, cutoff=cutoff, weight=weight)
 
     pass

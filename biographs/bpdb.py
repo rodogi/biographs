@@ -2,6 +2,21 @@ from Bio.PDB import *
 from collections import Counter
 
 def pdb_model(structure_file, water=False):
+    """Return a biopython [1] model entity from a structure file.
+
+    Parameters
+    ----------
+    structure_file: string
+        Path to structure file
+    water: boolean (default=False)
+        True to take into account waker molecules in the structure, False
+        otherwise.
+
+    Notes
+    -----
+    1. http://biopython.org/wiki/Biopython
+
+    """
     protein_name, file_format = structure_file.rsplit('.', 1)
     accepted_formats = ['cif', 'pdb']
     parsers = [MMCIFParser, PDBParser]
@@ -30,11 +45,10 @@ def pdb_model(structure_file, water=False):
     return model
 
 def label_residue(residue):
-    """ Return a string with the label of the biopython [1] residue object.
+    """ Return a string of the label of the biopython [1] residue object.
 
     The label of the residue is the following:
-        Chain + Position + Type
-    Where Type is the 3 letter amino acid format.
+        Chain + Position
 
     Parameters
     ----------
@@ -44,20 +58,20 @@ def label_residue(residue):
     Notes
     -----
     1. http://biopython.org/wiki/Biopython
+
     """
-    name = residue.resname
     position = str(residue.id[1])
     chain = residue.parent.id
 
-    return chain+position+name
+    return chain + position
 
-def residue_adjacency(structure_file, cutoff=5, weight=True):
+def residue_adjacency(model, cutoff=5, weight=True):
     """Return residue adjacency dictionary defined by cutoff distance.
 
     Parameters
     ----------
-    structure_file: string
-        File with atomic coordinates.
+    model: Bio.PDB.Model
+        Model created with the atomic coordinates of the protein file.
     cutoff: int or float
         Distance cutoff defining links between atoms.  Two atoms are adjacent
         if their distance is less than the given cutoff.
@@ -68,7 +82,6 @@ def residue_adjacency(structure_file, cutoff=5, weight=True):
 
     """
 
-    model = pdb_model(structure_file)
     atoms = Selection.unfold_entities(model, 'A')
 
     ns = NeighborSearch(atoms)
@@ -86,14 +99,17 @@ def residue_adjacency(structure_file, cutoff=5, weight=True):
         # Only different residues are connected by an edge (No loops).
         not_in_residue = []
         for neighbor in atomic_adjacency[atom]:
-            n_parent = label_residue(neighbor.get_parent())
-            if n_parent is not residue:
-                not_in_residue.append(n_parent)
+            neighbor_parent = label_residue(neighbor.get_parent())
+            if neighbor_parent is not residue:
+                not_in_residue.append(neighbor_parent)
 
         residue_adjacency[residue].extend(not_in_residue)
 
+    if not weight:
 
-    if weight:
+        return residue_adjacency
+
+    else:
         # Make new dictionary mapping each residue to its neighbors taking 
         # into account the weight.
         weighted_adjacency = {}
@@ -102,8 +118,5 @@ def residue_adjacency(structure_file, cutoff=5, weight=True):
             weighted_adjacency[residue] = {
                 neighbor: {'weight': counter[neighbor]}
                                for neighbor in counter}
+
         return weighted_adjacency
-
-    else:
-        return residue_adjacency
-
