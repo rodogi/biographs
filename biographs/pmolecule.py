@@ -2,6 +2,7 @@
 # python 2
 import bpdb
 import bgraph
+import bspace
 
 class Pmolecule(object):
 
@@ -14,5 +15,10 @@ class Pmolecule(object):
         model = self.model
 
         return bgraph.network(model, cutoff=cutoff, weight=weight)
+
+    def void(self, cutoff=5, mu=0, sigma=0):
+        model = self.model
+
+        return bspace.void_delaunay(model, cutoff=cutoff, mu=mu, sigma=sigma)
 
     pass
