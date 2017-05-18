@@ -1,5 +1,5 @@
-import networkx as nx
 from bpdb import *
+import networkx as nx
 
 def network(model, cutoff=5, weight=True):
 

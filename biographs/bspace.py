@@ -1,5 +1,7 @@
+from Bio.PDB import Selection
 import numpy as np
 from scipy.spatial import Delaunay, ConvexHull
+from bpdb import label_residue
 
 def void_delaunay(model, cutoff=5, mu=0, sigma=0):
     """Return dictionary with void of each residue
@@ -90,7 +92,54 @@ def void_delaunay(model, cutoff=5, mu=0, sigma=0):
 
     indices, indptr = DT.vertex_neighbor_vertices
 
-    Void = {residue.parent.id + str(residue.id[1]): void_residue(residue) for residue in
+    Void = {label_residue(residue): void_residue(residue) for residue in
             model.get_residues()}
 
     return Void
+
+def volume_delaunay(model):
+    """Returns dictionary containing volume for each residue in `model`.
+
+    Parameters
+    ----------
+    model: Bio.PDB.Model.Model
+        Model of the protein structure.
+
+    """
+
+    volume_dict = {}
+    atoms = np.array([atom for atom in model.get_atoms()])
+    DT = Delaunay([atom.coord for atom in atoms])
+
+    for simplex in DT.simplices:
+        parent_residues = Selection.get_unique_parents(atoms[simplex])
+        # Simplex is taken into account only if is totally contained in one
+        # residue.
+        if len(parent_residues) is 1:
+            unique_parent = label_residue(parent_residues[0])
+            cv_simplex = ConvexHull([atom.coord for atom in atoms[simplex]])
+            volume_dict.setdefault(unique_parent, 0)
+            volume_dict[unique_parent] += cv_simplex.volume
+
+    return volume_dict
+
+def volume_convex_hull(model):
+    """Return dictionary with the volume of each residue in model.
+
+    The volume of each residue is equal to the volume of the convex hull of
+    its atoms.
+
+    Parameters
+    ----------
+    model: Bio.PDB.Model.Model
+        Model for the structure of the protein.
+
+    """
+
+    volume_dict = {}
+
+    for residue in model.get_residues():
+        conv_residue = ConvexHull([atom.coord for atom in residue])
+        volume_dict[label_residue(residue)] = conv_residue.volume
+
+    return volume_dict

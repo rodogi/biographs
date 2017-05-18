@@ -21,4 +21,13 @@ class Pmolecule(object):
 
         return bspace.void_delaunay(model, cutoff=cutoff, mu=mu, sigma=sigma)
 
+    def volume_delaunay(self):
+        model = self.model
+
+        return bspace.volume_delaunay(model)
+
+    def volume_convex_hull(self):
+        model = self.model
+
+        return bspace.volume_convex_hull(model)
     pass
