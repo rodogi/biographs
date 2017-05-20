@@ -1,5 +1,9 @@
-from Bio.PDB import *
+"""bpdb.py - Tools for working with protein structure files
+"""
+
 from collections import Counter
+from Bio.PDB import MMCIFParser, PDBParser, Selection, NeighborSearch
+
 
 def pdb_model(structure_file, water=False):
     """Return a biopython [1] model entity from a structure file.
@@ -72,6 +76,7 @@ def residue_adjacency(model, cutoff=5, weight=True):
     ----------
     model: Bio.PDB.Model
         Model created with the atomic coordinates of the protein file.
+
     cutoff: int or float
         Distance cutoff defining links between atoms.  Two atoms are adjacent
         if their distance is less than the given cutoff.
@@ -84,39 +89,39 @@ def residue_adjacency(model, cutoff=5, weight=True):
 
     atoms = Selection.unfold_entities(model, 'A')
 
-    ns = NeighborSearch(atoms)
+    neighbor_search = NeighborSearch(atoms)
 
-    atomic_adjacency = {atom: set(ns.search(atom.coord, cutoff))
-                          - set([atom]) for atom in atoms}
-    residue_adjacency = {}
+    atomic_adjacency = {
+        atom: set(neighbor_search.search(atom.coord, cutoff))
+              - set([atom]) for atom in atoms}
+    adjacency = {}
 
     # Create residue adjacency dictionary with string format, see
     # label_residue.
     for atom, neighbors in atomic_adjacency.items():
         residue = label_residue(atom.get_parent())
-        residue_adjacency.setdefault(residue, [])
+        adjacency.setdefault(residue, [])
 
         # Only different residues are connected by an edge (No loops).
         not_in_residue = []
-        for neighbor in atomic_adjacency[atom]:
+        for neighbor in neighbors:
             neighbor_parent = label_residue(neighbor.get_parent())
             if neighbor_parent is not residue:
                 not_in_residue.append(neighbor_parent)
 
-        residue_adjacency[residue].extend(not_in_residue)
+        adjacency[residue].extend(not_in_residue)
 
     if not weight:
 
-        return residue_adjacency
+        return adjacency
 
-    else:
-        # Make new dictionary mapping each residue to its neighbors taking 
-        # into account the weight.
-        weighted_adjacency = {}
-        for residue in residue_adjacency:
-            counter = Counter(residue_adjacency[residue])
-            weighted_adjacency[residue] = {
-                neighbor: {'weight': counter[neighbor]}
-                               for neighbor in counter}
+    # Make new dictionary mapping each residue to its neighbors taking
+    # into account the weight.
+    weighted_adjacency = {}
+    for residue in adjacency:
+        counter = Counter(adjacency[residue])
+        weighted_adjacency[residue] = {
+            neighbor: {'weight': counter[neighbor]}
+            for neighbor in counter}
 
-        return weighted_adjacency
+    return weighted_adjacency
