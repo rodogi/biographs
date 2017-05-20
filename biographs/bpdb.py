@@ -1,6 +1,7 @@
 """bpdb.py - Tools for working with protein structure files
 """
 
+
 from collections import Counter
 from Bio.PDB import MMCIFParser, PDBParser, Selection, NeighborSearch
 
@@ -48,6 +49,7 @@ def pdb_model(structure_file, water=False):
 
     return model
 
+
 def label_residue(residue):
     """ Return a string of the label of the biopython [1] residue object.
 
@@ -68,6 +70,7 @@ def label_residue(residue):
     chain = residue.parent.id
 
     return chain + position
+
 
 def residue_adjacency(model, cutoff=5, weight=True):
     """Return residue adjacency dictionary defined by cutoff distance.
