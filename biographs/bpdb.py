@@ -89,14 +89,19 @@ def residue_adjacency(model, cutoff=5, weight=True):
     pdb_model
 
     """
-
     atoms = Selection.unfold_entities(model, 'A')
 
     neighbor_search = NeighborSearch(atoms)
+    atomic_adjacency = {}
+    for atom in atoms:
+        _res = label_residue(atom.get_parent())
+        adjacent_atoms = []
+        for adj_atom in neighbor_search.search(atom.coord, cutoff):
+            _adj_res = label_residue(adj_atom.parent)
+            if _adj_res != _res:
+                adjacent_atoms.append(adj_atom)
+        atomic_adjacency[atom] = adjacent_atoms
 
-    atomic_adjacency = {
-        atom: set(neighbor_search.search(atom.coord, cutoff))
-              - set([atom]) for atom in atoms}
     adjacency = {}
 
     # Create residue adjacency dictionary with string format, see
