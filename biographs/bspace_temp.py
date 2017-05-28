@@ -188,7 +188,7 @@ def void_ken_dill(model):
 
 # Delaunay triangulation functions.
     def _empty_triangles(simplex):
-        """Return True if simplex is empty, False otherwise.
+        """Return list of empty triangles in the tetrahedron.
 
         """
         empty_triangles = []
@@ -217,18 +217,15 @@ def void_ken_dill(model):
                             "Radius of atom {} is not defined".format(atom_k.id))
 
                     if (
-                        radius_i + radius_j < atom_i - atom_j and
-                            radius_i + radius_k < atom_i - atom_k and
-                            radius_j + radius_k < atom_j - atom_k):
-                        empty_triangles.append((i, j, k))
+                        radius_i + radius_j < atom_i - atom_j or
+                        radius_i + radius_k < atom_i - atom_k or
+                        radius_j + radius_k < atom_j - atom_k):
+                            empty_triangles.append((i, j, k))
 
-        if len(empty_triangles) == 4:
-            return True
-
-        return False
+        return empty_triangles
 
     def _depth_first_search(index):
-        """Return list of connected component and checked indices.
+        """Returns list of connected component and checked indices.
 
         """
         checked_indices = []
@@ -242,11 +239,10 @@ def void_ken_dill(model):
 
         while stack:
             checked_indices.append(index)
-            #empty_triangles = _empty_triangles(simplices[index])
+            empty_triangles = _empty_triangles(simplices[index])
             local_neighbors = neighbors[index]
             # Check if residue at the boundary
             if (-1) in local_neighbors:
-                """
                 # Where is the boundary
                 where = np.where(local_neighbors == -1)[0]
                 for _local_neighbor in where:
@@ -258,21 +254,14 @@ def void_ken_dill(model):
                         # connected_component is set to zero if it is
                         # connected to a simplex with an empty triangle
                         # on the boundary.
-                """
-                connected_component = []
-                return connected_component, checked_indices
+                        return connected_component, checked_indices
 
             good_neighbors = []
             for n, neighbor in enumerate(local_neighbors):
                 # Check if neighbor shares an empty triangle.
-                """
                 _triangle = tuple(_index for _index in range(4) if _index != n)
                 if _triangle in empty_triangles and neighbor not in checked_indices:
                     good_neighbors.append(neighbor)
-                """
-                if _empty_triangles(simplices[neighbor]):
-                    if neighbor not in checked_indices:
-                        good_neighbors.append(neighbor)
 
             if not good_neighbors:
                 connected_component.append(index)
@@ -300,7 +289,6 @@ def void_ken_dill(model):
             # Take an element at random from the different between indices and
             # checked indices.
             remaining_set = indices - set(checked_indices)
-            # Pick one of the remaining set.
             index = next(iter(remaining_set))
             connected_component, _checked_indices = _depth_first_search(index)
             if connected_component:
@@ -348,33 +336,57 @@ def void_ken_dill(model):
         # Tehtrahedra
         simplices = conv_simplex.simplices
         vertices = conv_simplex.vertices
+        points = conv_simplex.points
         volume_overlaps = []
 
         for vertex in vertices:
             dihedral_angles = []
             # Adjacent facets of `vertex`
             adjacent_facets = np.where(simplices == vertex)[0]
-            for first, second in [[0, 1], [1, 2], [2, 0]]:
-                # Normal vectors
-                normal_first = equations[adjacent_facets[first]][:-1]
-                normal_second = equations[adjacent_facets[second]][:-1]
-                # cos(phi) = - [ n_1 \cdot n_2 ]
-                cosine_angle = - np.dot(normal_first, normal_second)
-                dihedral_angle = np.arccos(cosine_angle)
-                dihedral_angles.append(dihedral_angle)
+            for first in range(2):
+                for second in range(first + 1, 3):
+                    # Normal vectors
+                    facet_1 = adjacent_facets[first]
+                    facet_2 = adjacent_facets[second]
+                    normal_first = equations[facet_1][:-1]
+                    normal_second = equations[facet_2][:-1]
+                    # Check if the angle between two planes is acute or
+                    # obtuse.
+                    normal = np.random.randn(3)
+                    normal -= normal.dot(normal_first) * normal_first
+                    normal /= np.linalg.norm(normal)
+                    # Get vertex in edge.
+                    edge, = [v for v in set(facet_1).intersection(set(facet_2))
+                             if v != vertex]
+                    vertex_1 = [v for v in facet_1 if v not in [vertex, edge]]
+                    vertex_2 = [v for v in facet_2 if v not in [vertex, edge]]
+                    edge = points[vertex] - points[edge]
+                    d_factor = - (normal.dot(edge))
+                    sign_1 = points[vertex_1].dot(normal) + d_factor
+                    sign_2 = points[vertex_2].dot(normal) + d_factor
+                    # Obtuse angle
+                    if sign_1 * sign_2 < 0:
+                        # cos(phi) =  [ n_1 \cdot n_2 ]
+                        cosine_angle = np.dot(normal_first, normal_second)
+                        dihedral_angle = np.arccos(cosine_angle)
+                    # Acute angle
+                    else:
+                        cosine_angle = - np.dot(normal_first, normal_second)
+                        dihedral_angle = np.arccos(cosine_angle)
+                    dihedral_angles.append(dihedral_angle)
 
             # Volume overlap
             # For `radius` take only the starting letter of atom.
             radius = atom_radii[atoms_simplex[vertex].id[0]]
-            factor = (radius**3) / 3.
+            factor = (2 / 6.) * radius**3
             volume_overlap = factor * (-np.pi + sum(dihedral_angles))
             volume_overlaps.append(volume_overlap)
 
         return volume_overlaps
 
     connected_components = _bounded_regions()
+    pdb.set_trace()
     void = defaultdict(int)
-    # In General except nothing of this void. Residues are well-packed.
     inner_void = defaultdict(int)
 
     for connected_component in connected_components:
