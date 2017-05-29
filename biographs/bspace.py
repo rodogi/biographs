@@ -1,7 +1,6 @@
 """Tools to deal with the void around residues in proteins
 """
 
-import pdb
 from collections import defaultdict, deque
 import numpy as np
 from scipy.spatial import Delaunay, ConvexHull
@@ -30,6 +29,8 @@ def void_delaunay(model, cutoff=5, mu=0, sigma=0):
             if mu != 0, then mu == 1.
 
     """
+    atoms = [atom for atom in model.get_atoms()]
+    DT = Delaunay([a.coord for a in atoms])  # Delaunay tessellation
 
     def void_residue(residue, *args):
         """Return the void of the residue.
@@ -48,7 +49,7 @@ def void_delaunay(model, cutoff=5, mu=0, sigma=0):
         """
 
         void = 0
-        atom_indices = set([atoms.index(atom) for atom in residue.get_atom()])
+        atom_indices = set([atoms.index(atom) for atom in residue])
 
         # v represents a point (atom) of residue
         for v in atom_indices:
@@ -87,12 +88,13 @@ def void_delaunay(model, cutoff=5, mu=0, sigma=0):
 
         return void
 
-    atoms = [atom for atom in model.get_atoms()]
-    DT = Delaunay([a.coord for a in atoms])  # Delaunay tessellation
-
     if (mu or sigma):
-        dis_edges = [atoms[simplex[i]] - atoms[simplex[j]] for simplex in DT.simplices
-                     for i in range(3) for j in range(i+1, 4)]
+        dis_edges = []
+        for simplex in DT.simplices:
+            for i in range(3):
+                for j in range(i+1, 4):
+                    dis_edges.append(atoms[simplex[i]] - atoms[simplex[j]])
+
         cutoff = mu * np.mean(dis_edges) + sigma * np.std(dis_edges)
         del dis_edges
 
@@ -153,7 +155,6 @@ def volume_convex_hull(model):
     return volume_dict
 
 
-# Functions used for `void_ken_dill`.
 def void_ken_dill(model):
     """Return dict with the void of each residue in `model`.
 
@@ -186,7 +187,6 @@ def void_ken_dill(model):
     simplices = delaunay_triangulation.simplices
     neighbors = delaunay_triangulation.neighbors
 
-# Delaunay triangulation functions.
     def _empty_triangles(simplex):
         """Return True if simplex is empty, False otherwise.
 
@@ -374,7 +374,7 @@ def void_ken_dill(model):
 
     connected_components = _bounded_regions()
     void = defaultdict(int)
-    # In General except nothing of this void. Residues are well-packed.
+    # In General expect nothing of this void. Residues are well-packed.
     inner_void = defaultdict(int)
 
     for connected_component in connected_components:
