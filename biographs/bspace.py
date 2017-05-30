@@ -394,8 +394,7 @@ def void_ken_dill(model):
     return void, inner_void
 
 
-def difference_convex_hulls(protein_name, chain='All',
-                            min_seq=None, max_seq=None):
+def void_convex_hulls(model):
     """
     Return void by computing the difference in volume
     between the amino acid convex hull and a larger convex hull
@@ -404,105 +403,95 @@ def difference_convex_hulls(protein_name, chain='All',
     ----------
     amino_acid: str, amino acid e.g. 'A311'.
     protein_name: str, name of the PDB file
+
     """
-    D = {} #Final dictionary
-    def get_set_points_protein(model, chain='All', min_seq=None, max_seq=None):
-        """
-        Return set of points corresponding to the atomic coordinates of a
-        protein part.
+    void = {}
+    atomic_coordinates = [tuple(atom.coord) for atom in model.get_atoms()]
+    for residue in model.get_residues():
+        atoms = [tuple(atom.coord) for atom in residue]
+        # Set of atomic coordinates not in residue
+        not_in_residue = set(atomic_coordinates) - set(atoms)
+        atoms = [atom.coord for atom in residue]
 
-        parameters
-        ----------
-        protein_name: str, name of the PDB file
-        chain: str, list of str, name of interested chains
-        min_seq: int, minimum sequence number
-        max_seq: int, maximum sequence number
-        """
-        if type(chain) is str and chain!='All':
-            chain = list(chain)
-        if chain is 'All':
-            chain = [c.id for c in model.child_list]
-        if min_seq is None:
-            min_seq = -float('inf')
-        if max_seq is None:
-            max_seq = float('inf')
+        conv_residue = ConvexHull(atoms)
+        simplices = conv_residue.simplices
+        vertices = conv_residue.vertices
+        equations = conv_residue.equations
 
-        A = [a for a in Bio.PDB.Selection.unfold_entities(model, 'A') if
-             a.parent.parent.id in chain and min_seq<=a.parent.id[1]<=max_seq]
+        r_prime = [] #Points to extend convex hull
+        for index, simplex in enumerate(simplices):
+            # Separate all points on the right side of the plane.
+            points_on_top = [np.array(point) for point in not_in_residue if
+                             equations[index][:-1].dot(point)
+                             + equations[index][-1] > 0]
 
-        R = [r for r in Bio.PDB.Selection.unfold_entities(model, 'R') if
-             r.parent.id in chain and min_seq<=r.id[1]<=max_seq]
-
-        return [tuple(a.coord) for a in A], R
-
-    Model = bpdb.pdb_model(protein_name)
-    protein_points, R = get_set_points_protein(Model, chain=chain,
-                                               min_seq=min_seq, max_seq=max_seq)
-    for r in R:
-        atoms = [tuple(a.coord) for a in r.child_list]
-        P = set(protein_points) - set(atoms)
-        cv = ConvexHull(atoms)
-        simplices = cv.simplices
-        vertices = cv.vertices
-        eq = cv.equations
-        N = [] #Points to extend convex hull
-        for j, simplex in enumerate(simplices):
-            for i, p_ in enumerate(atoms):
-                if i not in simplex:
-                    break
-
-            sign = eq[j][0]*p_[0]+eq[j][1]*p_[1]+eq[j][2]*p_[2]+eq[j][3]
-            #Separate all points on the right side of the plane:
-            half_space = [np.array(p) for p in P if
-                          sign*(p[0]*eq[j][0]+p[1]*eq[j][1]+p[2]*eq[j][2]
-                                +eq[j][3])<0]
-
-            if len(half_space) is 0:
+            if not points_on_top:
                 break
 
-            u = np.array(atoms[simplex[1]]) - np.array(atoms[simplex[0]])
-            v = np.array(atoms[simplex[2]]) - np.array(atoms[simplex[0]])
-            n_tri = np.cross(u, v)
+            vect_u = atoms[simplex[1]] - atoms[simplex[0]]
+            vect_v = atoms[simplex[2]] - atoms[simplex[0]]
+            normal = np.cross(vect_u, vect_v)
 
-            n = eq[j][:3] #Unit normal vector
-            in_triangle = []
+            # Unit normal vector
+            unit_normal = equations[index][:3]
+            points_in_triangle = []
 
-            for hp in half_space:
-                w = hp - np.array(atoms[simplex[0]])
-                gamma = np.dot(np.cross(u, w), n_tri)/np.dot(n_tri,n_tri)
-                beta = np.dot(np.cross(w, v), n_tri)/np.dot(n_tri,n_tri)
-                alpha = 1. - gamma - beta
-                #Check if all 3 barycentric coordinates of hp are < 0:
-                if 0<=alpha<=1 and 0<=beta<=1 and 0<=gamma<=1:
-                    #Select point and annotate its distance to plane:
-                    in_triangle.append([hp, np.abs(np.dot(hp, n) + eq[j][3])])
+            for point in points_on_top:
+                vect_w = point - atoms[simplex[0]]
+                gamma = np.dot(np.cross(vect_u, vect_w),
+                               normal)/normal.dot(normal)
 
-            if len(in_triangle) is not 0:
-                Spoint = min(in_triangle, key=lambda x: x[1])
-                #Point kept only if distance to plane < 5 angstroms:
-                if Spoint[1] <= 5.:
-                    N.append(Spoint[0])
+                beta = np.dot(np.cross(vect_w, vect_v),
+                              normal)/normal.dot(normal)
+
+                alpha = 1 - gamma - beta
+
+                # If the barycentric coordinates of a point are all three
+                # within the 0,1 range; then the projection of the point lies
+                # inside the triangle.
+                if 0 <= alpha <= 1 and 0 <= beta <= 1 and 0 <= gamma <= 1:
+                    # Select point and annotate its distance to plane.
+                    points_in_triangle.append([point, point.dot(unit_normal)
+                                               + equations[index][3]])
+
+            if not points_in_triangle:
+                # Pick up the point at minimal distance from the triangle.
+                selected_point = min(points_in_triangle, key=lambda x: x[1])
+                # Point kept only if the distance to plane is less or equal
+                # than 5 angstroms.
+                if selected_point[1] <= 5:
+                    r_prime.append(selected_point[0])
                 else:
-                    #Else, approach point until distance = 5 angstroms:
-                    Spoint[0] = Spoint[0] - n*(Spoint[1]-5.)
-                    #Make sure is at 5 angstroms from at least one point:
-                    _p1 = np.array(atoms[simplex[0]])
-                    _p2 = np.array(atoms[simplex[1]])
-                    _p3 = np.array(atoms[simplex[2]])
-                    _min_dis = min(np.linalg.norm(_p1-Spoint[0]),
-                                   np.linalg.norm(_p2-Spoint[0]),
-                                   np.linalg.norm(_p3-Spoint[0]))
-                    while _min_dis > 5.:
-                        Spoint[0] = Spoint[0] - n*(0.1)
-                        _min_dis = min(np.linalg.norm(_p1-Spoint[0]),
-                                       np.linalg.norm(_p2-Spoint[0]),
-                                       np.linalg.norm(_p3-Spoint[0]))
-                    N.append(Spoint[0])
-        if len(N) is 0:
-            print 'ZeroVoid: '+protein_name[-8:-4]+r.parent.id+str(r.id[1]) 
-        p_vertices = [np.array(atoms[m]) for m in vertices]
-        p_vertices = np.array(p_vertices + N)
-        cv1 = ConvexHull(p_vertices)
-        D[r.parent.id+str(r.id[1])] = [cv.volume, cv1.volume - cv.volume]
+                    # Approach point until its distance from one vertex of the
+                    # triangle is at distance is equal to 5 angstroms.
+                    selected_point[0] = selected_point[0] - unit_normal \
+                                         * (selected_point[1] - 5)
 
-    return D
+                    vertex_1 = atoms[simplex[0]]
+                    vertex_2 = atoms[simplex[1]]
+                    vertex_3 = atoms[simplex[2]]
+
+                    # Vertex at minimal distance from the point
+                    min_dis = 0
+                    point_min_dis = 0
+                    for vertex in [vertex_1, vertex_2, vertex_3]:
+                        distance = np.linalg.norm(vertex-selected_point)
+                        if distance <= min_dis:
+                            min_dis = distance
+                            point_min_dis = vertex
+
+                    while min_dis > 5.:
+                        selected_point[0] = selected_point[0] - \
+                                            unit_normal * 0.1
+                        min_dis = np.linalg.norm(point_min_dis
+                                                 - selected_point[0])
+
+                    r_prime.append(selected_point[0])
+
+        atoms_vertices = [atoms[m] for m in vertices]
+        larger_convex_hull_vertices = atoms_vertices + r_prime
+        larger_convex_hull = ConvexHull(larger_convex_hull_vertices)
+        void[label_residue(residue)] = [larger_convex_hull.volume
+                                        - conv_residue.volume]
+
+    return void
