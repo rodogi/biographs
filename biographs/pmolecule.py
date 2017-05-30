@@ -36,4 +36,8 @@ class Pmolecule(object):
 
         return bspace.void_ken_dill(model)
 
+    def void_convex_hulls(self):
+        model = self.model
+
+        return bspace.void_convex_hulls(model)
     pass

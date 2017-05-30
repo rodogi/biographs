@@ -1,6 +1,7 @@
 """Tools to deal with the void around residues in proteins
 """
 
+import pdb
 from collections import defaultdict, deque
 import numpy as np
 from scipy.spatial import Delaunay, ConvexHull
@@ -454,7 +455,7 @@ def void_convex_hulls(model):
                     points_in_triangle.append([point, point.dot(unit_normal)
                                                + equations[index][3]])
 
-            if not points_in_triangle:
+            if points_in_triangle:
                 # Pick up the point at minimal distance from the triangle.
                 selected_point = min(points_in_triangle, key=lambda x: x[1])
                 # Point kept only if the distance to plane is less or equal
@@ -475,7 +476,7 @@ def void_convex_hulls(model):
                     min_dis = 0
                     point_min_dis = 0
                     for vertex in [vertex_1, vertex_2, vertex_3]:
-                        distance = np.linalg.norm(vertex-selected_point)
+                        distance = np.linalg.norm(vertex-selected_point[0])
                         if distance <= min_dis:
                             min_dis = distance
                             point_min_dis = vertex
@@ -491,7 +492,7 @@ def void_convex_hulls(model):
         atoms_vertices = [atoms[m] for m in vertices]
         larger_convex_hull_vertices = atoms_vertices + r_prime
         larger_convex_hull = ConvexHull(larger_convex_hull_vertices)
-        void[label_residue(residue)] = [larger_convex_hull.volume
-                                        - conv_residue.volume]
+        void[label_residue(residue)] = larger_convex_hull.volume \
+            - conv_residue.volume
 
     return void
