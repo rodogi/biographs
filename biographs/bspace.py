@@ -1,15 +1,14 @@
 """Tools to deal with the void around residues in proteins
 """
 
-import pdb
 from collections import defaultdict, deque
 import numpy as np
 from scipy.spatial import Delaunay, ConvexHull
 from Bio.PDB import Selection
-from bpdb import label_residue
+from .bpdb import label_residue
 
 
-def void_delaunay(model, cutoff=5, mu=0, sigma=0):
+def void_delaunay(model, cutoff=5, mean=0, sigma=0):
     """Return dictionary with void of each residue
 
     Parameters
@@ -21,19 +20,19 @@ def void_delaunay(model, cutoff=5, mu=0, sigma=0):
             Upper bound for distance between nighbors in a
             tetrahedron.
 
-        mu : int, optional
+        mean : int, optional
 
         sigma: int, optional
             If `cutoff` is set by the mean and/or standard deviation of the
             distribution of the edge lengths in the triangulation, the
-            formula:: mu * mean + sigma * standard deviation is used. Typically
-            if mu != 0, then mu == 1.
+            formula:: mean * mean + sigma * standard deviation is used. Typically
+            if mean != 0, then mean == 1.
 
     """
     atoms = [atom for atom in model.get_atoms()]
-    DT = Delaunay([a.coord for a in atoms])  # Delaunay tessellation
+    delaunay = Delaunay([a.coord for a in atoms])  # Delaunay tessellation
 
-    def void_residue(residue, *args):
+    def void_residue(residue):
         """Return the void of the residue.
 
         Variable `atoms` containing a list of atoms of the protein must exist
@@ -52,17 +51,17 @@ def void_delaunay(model, cutoff=5, mu=0, sigma=0):
         void = 0
         atom_indices = set([atoms.index(atom) for atom in residue])
 
-        # v represents a point (atom) of residue
-        for v in atom_indices:
+        # point1 represents a point (atom) of residue
+        for point1 in atom_indices:
             selec_edges = []
-            # Loop over the neighbors of v and select only neighbors n such
-            # that dist(v, n) <= cutoff.
-            for n in indptr[indices[v]:indices[v+1]]:
-                if atoms[v] - atoms[n] <= cutoff:
-                    selec_edges.append(n)
+            # Loop over the neighbors of point1 and select only neighbors point2 such
+            # that dist(point1, point2) <= cutoff.
+            for point2 in indptr[indices[point1]:indices[point1+1]]:
+                if atoms[point1] - atoms[point2] <= cutoff:
+                    selec_edges.append(point2)
 
             selec_tri = []
-            # For each pair of neighbors of v, (k, j), select it if k and j
+            # For each pair of neighbors of point1, (k, j), select it if k and j
             # are neighbors and dist(k, j) <= cutoff.
             for i_n, k in enumerate(selec_edges[:-1]):
                 n_n = indptr[indices[k]:indices[k+1]]  # Neighbors of k
@@ -78,28 +77,28 @@ def void_delaunay(model, cutoff=5, mu=0, sigma=0):
             # point is itself a neighbor of each point in the tuple and if
             # the resulting 4-tuple does not contain only points of residue.
             for k, j in selec_tri:
-                for n in selec_edges:
+                for point2 in selec_edges:
                     # Check if all four are neighbors.
-                    if ((n, k) in selec_tri) and ((n, j) in selec_tri):
-                        simplex = set([v, k, j, n])
+                    if ((point2, k) in selec_tri) and ((point2, j) in selec_tri):
+                        simplex = set([point1, k, j, point2])
                         # Select tuples not containing only points in residue.
                         if len(simplex.intersection(atom_indices)) < 4:
-                            cv = ConvexHull([atoms[a].coord for a in simplex])
-                            void += cv.volume
+                            conv_simplex = ConvexHull([atoms[a].coord for a in simplex])
+                            void += conv_simplex.volume
 
         return void
 
-    if (mu or sigma):
+    if mean or sigma:
         dis_edges = []
-        for simplex in DT.simplices:
+        for simplex in delaunay.simplices:
             for i in range(3):
                 for j in range(i+1, 4):
                     dis_edges.append(atoms[simplex[i]] - atoms[simplex[j]])
 
-        cutoff = mu * np.mean(dis_edges) + sigma * np.std(dis_edges)
+        cutoff = mean * np.mean(dis_edges) + sigma * np.std(dis_edges)
         del dis_edges
 
-    indices, indptr = DT.vertex_neighbor_vertices
+    indices, indptr = delaunay.vertex_neighbor_vertices
 
     Void = {label_residue(residue): void_residue(residue) for residue in
             model.get_residues()}
@@ -119,9 +118,9 @@ def volume_delaunay(model):
 
     volume_dict = {}
     atoms = np.array([atom for atom in model.get_atoms()])
-    DT = Delaunay([atom.coord for atom in atoms])
+    delaunay = Delaunay([atom.coord for atom in atoms])
 
-    for simplex in DT.simplices:
+    for simplex in delaunay.simplices:
         parent_residues = Selection.get_unique_parents(atoms[simplex])
         # Simplex is taken into account only if is totally contained in one
         # residue.
@@ -205,24 +204,30 @@ def void_ken_dill(model):
                         radius_i = atom_radii[atom_i.id[0]]
                     except KeyError:
                         raise Exception(
-                            "Radius of atom {} is not defined".format(atom_i.id))
+                            "Radius of atom {} is not defined".format(
+                                atom_i.id))
                     try:
                         radius_j = atom_radii[atom_j.id[0]]
                     except KeyError:
                         raise Exception(
-                            "Radius of atom {} is not defined".format(atom_j.id))
+                            "Radius of atom {} is not defined".format(
+                                atom_j.id))
                     try:
                         radius_k = atom_radii[atom_k.id[0]]
                     except KeyError:
                         raise Exception(
-                            "Radius of atom {} is not defined".format(atom_k.id))
+                            "Radius of atom {} is not defined".format(
+                                atom_k.id))
 
                     if (
-                        radius_i + radius_j < atom_i - atom_j and
+                            radius_i + radius_j < atom_i - atom_j and
                             radius_i + radius_k < atom_i - atom_k and
                             radius_j + radius_k < atom_j - atom_k):
                         empty_triangles.append((i, j, k))
 
+        # Simplex is open if for all 6 edges in the tetrahedron, the distance
+        # between the endpoints is greater than the sum of their Van der Waals
+        # radii.
         if len(empty_triangles) == 4:
             return True
 
@@ -243,43 +248,28 @@ def void_ken_dill(model):
 
         while stack:
             checked_indices.append(index)
-            #empty_triangles = _empty_triangles(simplices[index])
             local_neighbors = neighbors[index]
             # Check if residue at the boundary
-            if (-1) in local_neighbors:
-                """
-                # Where is the boundary
-                where = np.where(local_neighbors == -1)[0]
-                for _local_neighbor in where:
-                    _triangle = tuple(_index for _index in range(4) if
-                                      _index != _local_neighbor)
-                    if _triangle in empty_triangles:
-                        connected_component = []
-
-                        # connected_component is set to zero if it is
-                        # connected to a simplex with an empty triangle
-                        # on the boundary.
-                """
+            if -1 in local_neighbors:
                 connected_component = []
+
                 return connected_component, checked_indices
 
             good_neighbors = []
-            for n, neighbor in enumerate(local_neighbors):
-                # Check if neighbor shares an empty triangle.
-                """
-                _triangle = tuple(_index for _index in range(4) if _index != n)
-                if _triangle in empty_triangles and neighbor not in checked_indices:
-                    good_neighbors.append(neighbor)
-                """
+            for neighbor in local_neighbors:
+                # Check if neighbor is an empty triangle and hasn't been
+                # checked yet.
                 if _empty_triangles(simplices[neighbor]):
                     if neighbor not in checked_indices:
                         good_neighbors.append(neighbor)
 
             if not good_neighbors:
                 connected_component.append(index)
-                # Remove `index` of stack.
+                # Remove `index` of stack as simplex has no `open` neighbors
+                # left to check.
                 stack.pop()
-                # If still elements in stack then set index to its last element.
+                # If still simplices in stack then set index to its last
+                # simplex.
                 if stack:
                     index = stack[-1]
 
@@ -316,15 +306,15 @@ def void_ken_dill(model):
         The volume of the overlap between the tetrahedron and the sphere,
         V_{overlap} is given by the equation:
 
-        V_{overlap} = \frac{2*r^3}{6} * [ -pi + phi_1 + phi_2 + phi_3 ],
+        V_{overlap} = frac{2*r^3}{6} * [ -pi + phi_1 + phi_2 + phi_3 ],
 
         where phi_i is the dihedral angle between the planes intersecting at edge
         `i` of the convex hull. If `n_1` and `n_2` are the normal vectors of the
         planes intersecting at `edge 1`, then
 
-        phi_1 = - [ n_1 \cdot n_2 ].
+        phi_1 = - [ n_1 dot n_2 ].
 
-        Where \cdot represents the dot product of both vectors. Note: The minus
+        Where `dot` represents the dot product of both vectors. Note: The minus
         sign in the formula is added taken into account the direction of the
         normal vectors found in the equation of the planes defined by the facets
         in `scipy.spatial.ConvexHull`.
@@ -385,7 +375,7 @@ def void_ken_dill(model):
             conv_simplex = ConvexHull([atom.coord for atom in atoms_simplex])
             volume_overlap = _volume_overlap(conv_simplex, atoms_simplex)
             simplex_void = conv_simplex.volume - sum(volume_overlap)
-            if 1 < len(residues_simplex):
+            if len(residues_simplex) > 1:
                 for residue in residues_simplex:
                     void[label_residue(residue)] += simplex_void
             else:
@@ -397,17 +387,20 @@ def void_ken_dill(model):
 
 def void_convex_hulls(model):
     """
-    Return void by computing the difference in volume
-    between the amino acid convex hull and a larger convex hull
-    defined by at least len(amino_acid) points.
+    Return void around each residue using convex hulls.
+
+    For each residue r, the void is defined as the difference in volume between
+    the convex hull of r and a larger convex hull noted r'.
+
     Parameters
     ----------
-    amino_acid: str, amino acid e.g. 'A311'.
-    protein_name: str, name of the PDB file
+    model : Bio.PDB.Model.Model
+    The model of the protein structure defined by its atomic coordinates.
 
     """
     void = {}
     atomic_coordinates = [tuple(atom.coord) for atom in model.get_atoms()]
+
     for residue in model.get_residues():
         atoms = [tuple(atom.coord) for atom in residue]
         # Set of atomic coordinates not in residue
@@ -419,7 +412,7 @@ def void_convex_hulls(model):
         vertices = conv_residue.vertices
         equations = conv_residue.equations
 
-        r_prime = [] #Points to extend convex hull
+        r_prime = []  # Points to extend convex hull
         for index, simplex in enumerate(simplices):
             # Separate all points on the right side of the plane.
             points_on_top = [np.array(point) for point in not_in_residue if
@@ -472,7 +465,10 @@ def void_convex_hulls(model):
                     vertex_2 = atoms[simplex[1]]
                     vertex_3 = atoms[simplex[2]]
 
-                    # Vertex at minimal distance from the point
+                    # Select the vertex of the triangle at minimal distance
+                    # from `selected_point`. Move `selected_point` closer to
+                    # that vertex by 0.1 angstroms until `selected_point` is at
+                    # distance less than 5 angstroms from the vertex.
                     min_dis = 0
                     point_min_dis = 0
                     for vertex in [vertex_1, vertex_2, vertex_3]:
