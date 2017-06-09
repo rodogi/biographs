@@ -16,10 +16,11 @@ class Pmolecule(object):
 
         return bgraph.network(model, cutoff=cutoff, weight=weight)
 
-    def void(self, cutoff=5, mu=0, sigma=0):
+    def void(self, cutoff=5, mean=0, sigma=0):
         model = self.model
 
-        return bspace.void_delaunay(model, cutoff=cutoff, mu=mu, sigma=sigma)
+        return bspace.void_delaunay(model, cutoff=cutoff, mean=mean,
+                                    sigma=sigma)
 
     def volume_delaunay(self):
         model = self.model
@@ -40,4 +41,3 @@ class Pmolecule(object):
         model = self.model
 
         return bspace.void_convex_hulls(model)
-    pass

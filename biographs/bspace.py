@@ -84,7 +84,7 @@ def void_delaunay(model, cutoff=5, mean=0, sigma=0):
                     # Check if all four are neighbors.
                     if (point2, point3) in triangle and \
                             (point2, point4) in triangle:
-                        simplex = set([point1, point3, point4, point2])
+                        simplex = set([point1, point2, point3, point4])
                         # Select tuples not containing only points in residue.
                         if len(simplex.intersection(atom_indices)) < 4:
                             conv_simplex = ConvexHull([atoms[a].coord for a in
