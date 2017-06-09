@@ -25,12 +25,13 @@ def void_delaunay(model, cutoff=5, mean=0, sigma=0):
         sigma: int, optional
             If `cutoff` is set by the mean and/or standard deviation of the
             distribution of the edge lengths in the triangulation, the
-            formula:: mean * mean + sigma * standard deviation is used. Typically
-            if mean != 0, then mean == 1.
+            formula:: mean * mean + sigma * standard deviation is used.
+            Typically if mean != 0, then mean == 1.
 
     """
     atoms = [atom for atom in model.get_atoms()]
     delaunay = Delaunay([a.coord for a in atoms])  # Delaunay tessellation
+    indices, indptr = delaunay.vertex_neighbor_vertices
 
     def void_residue(residue):
         """Return the void of the residue.
@@ -53,37 +54,41 @@ def void_delaunay(model, cutoff=5, mean=0, sigma=0):
 
         # point1 represents a point (atom) of residue
         for point1 in atom_indices:
-            selec_edges = []
-            # Loop over the neighbors of point1 and select only neighbors point2 such
-            # that dist(point1, point2) <= cutoff.
+            edge = []
+            # Loop over the neighbors of point1 and select only neighbors
+            # point2 such that dist(point1, point2) <= cutoff.
             for point2 in indptr[indices[point1]:indices[point1+1]]:
                 if atoms[point1] - atoms[point2] <= cutoff:
-                    selec_edges.append(point2)
+                    edge.append(point2)
 
-            selec_tri = []
-            # For each pair of neighbors of point1, (k, j), select it if k and j
-            # are neighbors and dist(k, j) <= cutoff.
-            for i_n, k in enumerate(selec_edges[:-1]):
-                n_n = indptr[indices[k]:indices[k+1]]  # Neighbors of k
+            triangle = []
+            # For each pair of neighbors of point1, (point3, point4), select
+            # it if point3 and point4 are neighbors and dist(point3, point4)
+            # less or equal than `cutoff`.
+            for i_n, point3 in enumerate(edge[:-1]):
+                # Neighbors of point3
+                n_n = indptr[indices[point3]:indices[point3+1]]
 
-                for j in selec_edges[i_n+1:]:
-                    if atoms[k] - atoms[j] <= cutoff:
-                        if j in n_n:
-                            selec_tri.append((k, j))
+                for point4 in edge[i_n+1:]:
+                    if atoms[point3] - atoms[point4] <= cutoff:
+                        if point4 in n_n:
+                            triangle.append((point3, point4))
 
-            # select_tri contains all 3-tuple of pair-wise neighbors such that
+            # `triangle` contains all 3-tuple of pair-wise neighbors such that
             # at least one point in the tuple is a point (atom) of residue.
             # For each such tuple, add a point of the triangulation, if that
             # point is itself a neighbor of each point in the tuple and if
             # the resulting 4-tuple does not contain only points of residue.
-            for k, j in selec_tri:
-                for point2 in selec_edges:
+            for point3, point4 in triangle:
+                for point2 in edge:
                     # Check if all four are neighbors.
-                    if ((point2, k) in selec_tri) and ((point2, j) in selec_tri):
-                        simplex = set([point1, k, j, point2])
+                    if (point2, point3) in triangle and \
+                            (point2, point4) in triangle:
+                        simplex = set([point1, point3, point4, point2])
                         # Select tuples not containing only points in residue.
                         if len(simplex.intersection(atom_indices)) < 4:
-                            conv_simplex = ConvexHull([atoms[a].coord for a in simplex])
+                            conv_simplex = ConvexHull([atoms[a].coord for a in
+                                                       simplex])
                             void += conv_simplex.volume
 
         return void
@@ -97,8 +102,6 @@ def void_delaunay(model, cutoff=5, mean=0, sigma=0):
 
         cutoff = mean * np.mean(dis_edges) + sigma * np.std(dis_edges)
         del dis_edges
-
-    indices, indptr = delaunay.vertex_neighbor_vertices
 
     Void = {label_residue(residue): void_residue(residue) for residue in
             model.get_residues()}
