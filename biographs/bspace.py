@@ -5,7 +5,7 @@ from collections import defaultdict, deque
 import numpy as np
 from scipy.spatial import Delaunay, ConvexHull
 from Bio.PDB import Selection
-from bpdb import label_residue
+from .bpdb import label_residue
 
 
 def void_delaunay(model, cutoff=5, mean=0, sigma=0):

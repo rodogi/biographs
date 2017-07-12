@@ -1,4 +1,4 @@
-from bpdb import *
+from .bpdb import *
 import networkx as nx
 
 def network(model, cutoff=5, weight=True):

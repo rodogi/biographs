@@ -1,8 +1,9 @@
 # class to deal with protein structures
 # python 2
-import bpdb
-import bgraph
-import bspace
+from __future__ import absolute_import
+from . import bpdb
+from . import bgraph
+from . import bspace
 
 
 class Pmolecule(object):
