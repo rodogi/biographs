@@ -62,4 +62,4 @@ np.savetxt(os.path.join(current_path, 'database.csv'), database, delimiter=',',
            fmt='%s')
 
 # Delete temporal directory `pdb'
-#shutil.rmtree(pdbs_path, ignore_errors=True)
+shutil.rmtree(pdbs_path, ignore_errors=True)
