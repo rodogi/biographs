@@ -22,8 +22,8 @@ def pdb_model(structure_file, water=False):
     1. http://biopython.org/wiki/Biopython
 
     """
-    accepted_formats = ['cif', 'pdb']
-    parsers = [MMCIFParser, PDBParser]
+    accepted_formats = ['cif', 'pdb', 'ent']
+    parsers = [MMCIFParser, PDBParser, PDBParser]
     protein_name, file_format = structure_file.rsplit('.', 1)
 
     try:
