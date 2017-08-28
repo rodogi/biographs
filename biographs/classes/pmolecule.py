@@ -1,5 +1,6 @@
 # class to deal with protein structures
 # python 2
+
 from __future__ import absolute_import
 from biographs.lib.bpdb import pdb_model
 from biographs.lib.bgraph import network

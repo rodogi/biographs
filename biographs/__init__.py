@@ -1,1 +1,1 @@
-from .pmolecule import Pmolecule
+from .classes.pmolecule import Pmolecule
