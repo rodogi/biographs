@@ -15,7 +15,7 @@ high customization of the network and tons of tools for networks analysis.
 
 To use biographs just type in a terminal:
 
-> git clone https://github.com/rodogi/biographs.git
+		$ git clone https://github.com/rodogi/biographs.git
 
 Here is an example to build the amino acid network of the cholera toxin (PDB
 id: 1eei):
