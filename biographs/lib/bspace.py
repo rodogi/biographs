@@ -173,8 +173,8 @@ def void_ken_dill(model):
     [1]: D. Flatow et al. (Volumes and surface areas: Geometries and scaling
     relationships between coarse grained and atomic structures).
     [2]: J.C Gaines et al. (Packing in protein cores).
-
     """
+
     atom_radii = {
         'C': 1.70,
         'F': 2.00,  # Iron
@@ -401,6 +401,7 @@ def void_convex_hulls(model):
     The model of the protein structure defined by its atomic coordinates.
 
     """
+
     void = {}
     atomic_coordinates = [tuple(atom.coord) for atom in model.get_atoms()]
 
