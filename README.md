@@ -35,7 +35,7 @@ Required packages
 [biopython](http://biopython.org/wiki/Biopython)
 Great to read and work with structure files such as pdb found in the protein
 data bank. You can listen to the voices of three of the main contributors of
-biopython in [this](https://www.podcastinit.com/biopython-with-peter-cock-wibowo-andrarto-and-tiago-antao-episode-125/>) podcast.
+biopython in [this](https://www.podcastinit.com/biopython-with-peter-cock-wibowo-andrarto-and-tiago-antao-episode-125/) podcast.
 
 [networkx](https://networkx.github.io)
 Has an extensive set of functions to deal with networks.
