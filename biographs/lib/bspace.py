@@ -390,10 +390,10 @@ def void_ken_dill(model):
 
 def void_convex_hulls(model):
     """
-    Return void around each residue using convex hulls.
+    Return dictionary of with void around each residue using convex hulls.
 
     For each residue r, the void is defined as the difference in volume between
-    the convex hull of r and a larger convex hull noted r'.
+    the convex hull of r and a larger convex hull noted conv(r_v).
 
     Parameters
     ----------
@@ -407,7 +407,7 @@ def void_convex_hulls(model):
 
     for residue in model.get_residues():
         atoms = [tuple(atom.coord) for atom in residue]
-        # Set of atomic coordinates not in residue
+        # Set of atomic coordinates NOT in residue
         not_in_residue = set(atomic_coordinates) - set(atoms)
         atoms = [atom.coord for atom in residue]
 
@@ -416,9 +416,9 @@ def void_convex_hulls(model):
         vertices = conv_residue.vertices
         equations = conv_residue.equations
 
-        r_prime = []  # Points to extend convex hull
+        r_prime = []  # Points `r_v' for extend convex hull
         for index, simplex in enumerate(simplices):
-            # Separate all points on the right side of the plane.
+            # Take only points on top of the simplex
             points_on_top = [np.array(point) for point in not_in_residue if
                              equations[index][:-1].dot(point)
                              + equations[index][-1] > 0]
@@ -437,10 +437,10 @@ def void_convex_hulls(model):
             for point in points_on_top:
                 vect_w = point - atoms[simplex[0]]
                 gamma = np.dot(np.cross(vect_u, vect_w),
-                               normal)/normal.dot(normal)
+                               normal) / normal.dot(normal)
 
                 beta = np.dot(np.cross(vect_w, vect_v),
-                              normal)/normal.dot(normal)
+                              normal) / normal.dot(normal)
 
                 alpha = 1 - gamma - beta
 
@@ -473,10 +473,10 @@ def void_convex_hulls(model):
                     # from `selected_point`. Move `selected_point` closer to
                     # that vertex by 0.1 angstroms until `selected_point` is at
                     # distance less than 5 angstroms from the vertex.
-                    min_dis = 0
+                    min_dis = 10  # Dummy value extremely big
                     point_min_dis = 0
                     for vertex in [vertex_1, vertex_2, vertex_3]:
-                        distance = np.linalg.norm(vertex-selected_point[0])
+                        distance = np.linalg.norm(vertex - selected_point[0])
                         if distance <= min_dis:
                             min_dis = distance
                             point_min_dis = vertex
