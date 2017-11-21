@@ -473,10 +473,10 @@ def void_convex_hulls(model):
                     # from `selected_point`. Move `selected_point` closer to
                     # that vertex by 0.1 angstroms until `selected_point` is at
                     # distance less than 5 angstroms from the vertex.
-                    min_dis = 0
+                    min_dis = float("inf")
                     point_min_dis = 0
                     for vertex in [vertex_1, vertex_2, vertex_3]:
-                        distance = np.linalg.norm(vertex-selected_point[0])
+                        distance = np.linalg.norm(vertex - selected_point[0])
                         if distance <= min_dis:
                             min_dis = distance
                             point_min_dis = vertex
