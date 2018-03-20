@@ -161,7 +161,7 @@ def volume_convex_hull(model):
 def void_ken_dill(model):
     """Return dict with the void of each residue in `model`.
 
-    Atom radii are taken from [1] except for hidrogen taken from [2].
+    Atom radii are taken from [1] except for hydrogen taken from [2].
 
     Parameters
     ----------
