@@ -1,8 +1,6 @@
-biographs: Amino acid networks in Python
-========================================
+* biographs: Amino acid networks in Python
 
-What is biographs?
-------------------
+** What is biographs?
 
 Biographs is a python module converting structural files formats like *pdb* or
 *cif* into amino acid networks. It is written over the packages biopython and
@@ -15,7 +13,10 @@ high customization of the network and tons of tools for networks analysis.
 
 To use biographs just type in a terminal:
 
-		$ git clone https://github.com/rodogi/biographs.git
+#+begin_src shell
+git clone https://github.com/rodogi/biographs.git
+#+end_src
+
 
 Here is an example to build the amino acid network of the cholera toxin (PDB
 id: 1eei):
@@ -39,7 +40,3 @@ biopython in [this](https://www.podcastinit.com/biopython-with-peter-cock-wibowo
 
 [networkx](https://networkx.github.io)
 Has an extensive set of functions to deal with networks.
-
-[scipy](https://www.scipy.org)
-Mainstream package for scientific computation, here used mainly for numpy and
-geometrical algorithms.
