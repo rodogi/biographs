@@ -33,34 +33,34 @@ I have a =pdb= file in =/Users/rdora/1eei.pdb=, here is an example to build the 
 the cholera toxin (PDB id 1eei).
 
 #+begin_src python
-	import biographs as bg
+import biographs as bg
 
 
-	molecule = bg.Pmolecule('Users/rdora/1eei.pdb')
-	# biopython molecule structural model
-	mol_model = pmolecule.model
-	# networkx graph, by default 5 angstrom
-	network = molecule.network()
-	list(network.nodes)[:10]
-	# Output
-	['G26', 'G27', 'G24', 'G25', 'G22', 'G23', 'G20', 'G21', 'G28', 'G29']
+molecule = bg.Pmolecule('Users/rdora/1eei.pdb')
+# biopython molecule structural model
+mol_model = pmolecule.model
+# networkx graph, by default 5 angstrom
+network = molecule.network()
+list(network.nodes)[:10]
+# Output
+['G26', 'G27', 'G24', 'G25', 'G22', 'G23', 'G20', 'G21', 'G28', 'G29']
 #+end_src
 
 *** Distance threshold and weight
 		If you want to use a different distance to define if two atoms are connected or not (and
 		therefore their amino acids), use:
 		
-		#+begin_src python
-			# Threshold is 8 angstrom
-			network = molecule.network(cutoff=8)
-		#+end_src
+#+begin_src python
+# Threshold is 8 angstrom
+network = molecule.network(cutoff=8)
+#+end_src
 		
 		Similarly, if you want to set the network to be weighted, where each edge has a weight equal to
 		the number of atom-pairs that are within the distance threshold, then:
 
-		#+begin_src python
-			network = molecule.network(cutoff=8, weight=True)
-		#+end_src
+#+begin_src python
+network = molecule.network(cutoff=8, weight=True)
+#+end_src
 
 *** Water molecules
 By default, water molecules are not considered as atoms, you can change that behavior with:
