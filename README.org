@@ -1,42 +1,81 @@
 * biographs: Amino acid networks in Python
 
 ** What is biographs?
+	 Other names for amino-acid network include:
+	  * Protein contact network
+		* Residue contact network
+		* Structural protein network
 
-Biographs is a python module converting structural files formats like *pdb* or
-*cif* into amino acid networks. It is written over the packages biopython and
-networkx. This allows for a flexible and powerful handling of both: protein
-networks and protein structures.
+		biographs is a python module converting structural files formats like *pdb* or
+		*cif* into amino acid networks. It is written over the libraries =biopython and
+		networkx. This allows for a flexible and powerful handling of both: protein
+		networks and protein structures.
+		
+		An amino-acid network is a network of amino acids such that two amino acids are connected if
+		they share two atoms within a certain distance. Here, this distance is defined by the keyword
+		=cutoff= that defines the threshold distance in angstroms (Å).
 
-Notably biographs uses the great Bio.PDB module to construct the network given
-a cutoff distance. Here, the network is a networkx.Graph object, which allows
-high customization of the network and tons of tools for networks analysis.
+		It uses the great Bio.PDB module to construct the network given
+		a cutoff distance. Here, the network is a networkx.Graph object, which allows
+		high customization of the network and tons of tools for networks analysis.
 
-To use biographs just type in a terminal:
+		To use biographs just type in a terminal:
 
 #+begin_src shell
 git clone https://github.com/rodogi/biographs.git
+cd biographs
 #+end_src
 
+** Basic usage
 
-Here is an example to build the amino acid network of the cholera toxin (PDB
-id: 1eei):
 
-```python
-import biographs as bg
+I have a =pdb= file in =/Users/rdora/1eei.pdb=, here is an example to build the amino acid network of
+the cholera toxin (PDB id 1eei).
 
-molecule = bg.Pmolecule('1eei.pdb')
-network = molecule.network()
-network.nodes()[:10]
-['G26', 'G27', 'G24', 'G25', 'G22', 'G23', 'G20', 'G21', 'G28', 'G29']
-```
+#+begin_src python
+	import biographs as bg
 
-Required packages
------------------
 
-[biopython](http://biopython.org/wiki/Biopython)
+	molecule = bg.Pmolecule('Users/rdora/1eei.pdb')
+	# biopython molecule structural model
+	mol_model = pmolecule.model
+	# networkx graph, by default 5 angstrom
+	network = molecule.network()
+	list(network.nodes)[:10]
+	# Output
+	['G26', 'G27', 'G24', 'G25', 'G22', 'G23', 'G20', 'G21', 'G28', 'G29']
+#+end_src
+
+*** Distance threshold and weight
+		If you want to use a different distance to define if two atoms are connected or not (and
+		therefore their amino acids), use:
+		
+		#+begin_src python
+			# Threshold is 8 angstrom
+			network = molecule.network(cutoff=8)
+		#+end_src
+		
+		Similarly, if you want to set the network to be weighted, where each edge has a weight equal to
+		the number of atom-pairs that are within the distance threshold, then:
+
+		#+begin_src python
+			network = molecule.network(cutoff=8, weight=True)
+		#+end_src
+
+*** Water molecules
+By default, water molecules are not considered as atoms, you can change that behavior with:
+
+#+begin_src python
+# Use water molecules
+molecule = Pmolecule('/Users/rdora/1eei.pdb', water=True)
+#+end_src
+
+** Required packages
+
+[[http://biopython.org/wiki/Biopython][biopython]]
 Great to read and work with structure files such as pdb found in the protein
 data bank. You can listen to the voices of three of the main contributors of
-biopython in [this](https://www.podcastinit.com/biopython-with-peter-cock-wibowo-andrarto-and-tiago-antao-episode-125/) podcast.
+biopython in [[https://www.podcastinit.com/biopython-with-peter-cock-wibowo-andrarto-and-tiago-antao-episode-125/][this]] podcast.
 
-[networkx](https://networkx.github.io)
+[[https://networkx.github.io][networkx]]
 Has an extensive set of functions to deal with networks.
