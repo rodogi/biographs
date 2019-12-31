@@ -39,6 +39,7 @@ class Pmolecule(object):
 
     def __len__(self):
         """Returns number of residues in the molecule"""
+<<<<<<< HEAD
 
         return len(list(self.model.get_residues()))
 
@@ -62,6 +63,22 @@ class Pmolecule(object):
         pos = res.id[1]
 
         return self.model[chain.id][pos]
+=======
+        return len([res for res in self.model.get_residues()])
+
+    def res(self, residue):
+        """Return :Bio:PDB:Residue: from node of network"""
+        if type(residue) is not str:
+            raise Exception("{} is not a string".format(residue))
+        try:
+            _res = self.model[residue[0]][int(residue[1:])]
+        except KeyError:
+            raise Exception("{} not a residue in molecule".format(
+                residue))
+        chain = res.parent
+        pos = res.id[1]
+        return model[chain.id][pos]
+>>>>>>> 67f0943b494f48b8ca293eef92f719a6e228a67a
 
     def network(self, cutoff=5, weight=True):
         """Return the interaction network of a protein structure.
