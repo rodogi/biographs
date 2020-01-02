@@ -29,7 +29,7 @@ $ pip install biographs
 		a cutoff distance. Here, the network is a =networkx.Graph= object, which allows
 		high customization of the network and tons of tools for networks analysis.
 
-		To use biographs just type in a terminal:
+		To use biographs just type in a terminal (ignore the $ symbol):
 
 #+begin_src shell
 $ pip install biographs
