@@ -1,12 +1,22 @@
-* biographs: Amino acid networks in Python
+* Biographs: Amino acid networks in python
 
 	 Other names for amino-acid network include:
-	  * Protein contact network
-		* Residue contact network
-		* Structural protein network
+	  - Protein contact network
+		- Residue contact network
+		- Structural protein network
+      
+Work with amino acid networks using the power of solid packages =networkx= and =biopython=!
 
-** What is biographs?
-		biographs is a python module converting structural files formats like *pdb* or
+** Install
+   
+To install, open a terminal and type the following:
+
+#+BEGIN_SRC shell
+pip install biographs
+#+END_SRC
+
+** What is Biographs?
+		Biographs is a python module converting structural files formats like *pdb* or
 		*cif* into amino acid networks. It is written over the libraries =biopython and
 		networkx. This allows for a flexible and powerful handling of both: protein
 		networks and protein structures.
@@ -22,8 +32,7 @@
 		To use biographs just type in a terminal:
 
 #+begin_src shell
-git clone https://github.com/rodogi/biographs.git
-cd biographs
+pip install biographs
 #+end_src
 
 ** Basic usage
