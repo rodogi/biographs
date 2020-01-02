@@ -1,8 +1,5 @@
 import setuptools
 
-with open("README.org", "r") as fh:
-    long_description = fh.read()
-
 setuptools.setup(
     name="biographs",
     version="0.1",
@@ -13,5 +10,4 @@ setuptools.setup(
     keywords=["protein contact network", "protein graphs"],
     packages=["biographs", "biographs.classes", "biographs.lib"],
     install_requires=['networkx', 'biopython'],
-    long_description=long_description,
     python_requires='>=3.5')
