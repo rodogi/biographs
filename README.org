@@ -12,27 +12,27 @@ Work with amino acid networks using the power of solid packages =networkx= and =
 To install, open a terminal and type the following:
 
 #+BEGIN_SRC shell
-pip install biographs
+$ pip install biographs
 #+END_SRC
 
 ** What is Biographs?
 		Biographs is a python module converting structural files formats like *pdb* or
-		*cif* into amino acid networks. It is written over the libraries =biopython and
-		networkx. This allows for a flexible and powerful handling of both: protein
+		*cif* into amino acid networks. It is written over the libraries =biopython= and
+		=networkx=. This allows for a flexible and powerful handling of both: protein
 		networks and protein structures.
 		
 		An amino-acid network is a network of amino acids such that two amino acids are connected if
 		they share two atoms within a certain distance. Here, this distance is defined by the keyword
-		=cutoff= that defines the threshold distance in angstroms (Å).
+		*cutoff* that defines the threshold distance in angstroms (Å).
 
 		It uses the great Bio.PDB module to construct the network given
-		a cutoff distance. Here, the network is a networkx.Graph object, which allows
+		a cutoff distance. Here, the network is a =networkx.Graph= object, which allows
 		high customization of the network and tons of tools for networks analysis.
 
 		To use biographs just type in a terminal:
 
 #+begin_src shell
-pip install biographs
+$ pip install biographs
 #+end_src
 
 ** Basic usage
@@ -56,7 +56,7 @@ list(network.nodes)[:10]
 #+end_src
 
 *** Distance threshold and weight
-		If you want to use a different distance to define if two atoms are connected or not (and
+		If you want to use a *different distance* to define if two atoms are connected or not (and
 		therefore their amino acids), use:
 		
 #+begin_src python
