@@ -20,6 +20,8 @@ class Pmolecule(object):
         structure-file formats are supported: `pdb', `cif', and `ent'.
     water : boolean, (default: False)
         If False, water molecules are removed.
+    ions : boolean, (default: False)
+        If False, ions are removed.
 
     Attributes
     ----------
@@ -32,9 +34,9 @@ class Pmolecule(object):
         The path to the structural file used to instantiate the class.
     """
 
-    def __init__(self, structure_file, water=False):
+    def __init__(self, structure_file, water=False, ions=False):
 
-        self.model = pdb_model(structure_file, water=water)
+        self.model = pdb_model(structure_file, water=water, ions=ions)
         self.path_to_file = structure_file
 
     def __len__(self):

@@ -6,7 +6,7 @@ from collections import Counter
 from Bio.PDB import MMCIFParser, PDBParser, Selection, NeighborSearch
 
 
-def pdb_model(structure_file, water=False):
+def pdb_model(structure_file, water=False, ions=False):
     """Return a biopython [1] model entity from a structure file.
 
     Parameters
@@ -14,8 +14,10 @@ def pdb_model(structure_file, water=False):
     structure_file: string
         Path to structure file
     water: boolean (default=False)
-        True to take into account waker molecules in the structure, False
+        True to take into account water molecules in the structure, False
         otherwise.
+    ions: boolean (default=False)
+        True to take into account ions in the structure, False otherwise.
 
     Notes
     -----
@@ -43,6 +45,15 @@ def pdb_model(structure_file, water=False):
                 # Empty strings evaluate to False.  Therefore hetero_flag
                 # returns False if the residue is not a water molecule.
                 if hetero_flag:
+                    chain.detach_child(residue.id)
+            if not list(chain):
+                model.detach_child(chain.id)
+
+    if not ions:
+        for chain in model.get_chains():
+            for residue in list(chain):
+                if len(residue.get_unpacked_list()) == 1:
+                    # If residue is single atom, assume ion and remove.
                     chain.detach_child(residue.id)
             if not list(chain):
                 model.detach_child(chain.id)
