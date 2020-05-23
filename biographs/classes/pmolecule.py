@@ -36,7 +36,7 @@ class Pmolecule(object):
 
     def __init__(self, structure_file, water=False, ions=False):
 
-        self.model = pdb_model(structure_file, water=water, ions=False)
+        self.model = pdb_model(structure_file, water=water, ions=ions)
         self.path_to_file = structure_file
 
     def __len__(self):
